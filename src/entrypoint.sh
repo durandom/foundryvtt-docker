@@ -343,7 +343,12 @@ export CONTAINER_PRESERVE_CONFIG FOUNDRY_ADMIN_KEY FOUNDRY_AWS_CONFIG \
   FOUNDRY_UPNP_LEASE_DURATION FOUNDRY_WORLD
 # set the TERM signal handler
 trap handle_sigterm TERM
-su-exec "${FOUNDRY_UID}:${FOUNDRY_GID}" ./launcher.sh "$@" &
+# only su-exec if we are not already the requested user and group
+if [ "$(id -u)" != ${FOUNDRY_UID} ] || [ "$(id -g)" != ${FOUNDRY_GID} ]; then
+  su-exec "${FOUNDRY_UID}:${FOUNDRY_GID}" ./launcher.sh "$@" &
+else
+  exec ./launcher.sh "$@" &
+fi
 child_pid=$!
 log_debug "Waiting for child pid: ${child_pid} to exit."
 wait "$child_pid"
